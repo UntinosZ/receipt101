@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast"
 import ReceiptPreview from "@/components/receipt-preview"
 import TemplateSelector from "@/components/template-selector"
 import QRCodeGenerator from "@/components/qr-code-generator"
+import MenuSelector from "@/components/menu-selector"
 
 interface ReceiptCreatorProps {
   onEditTemplate?: (template: Template) => void
@@ -70,6 +71,13 @@ export default function ReceiptCreator({ onEditTemplate }: ReceiptCreatorProps) 
     setReceiptData((prev) => ({
       ...prev,
       items: [...prev.items, newItem],
+    }))
+  }
+
+  const addMenuItemToReceipt = (item: ReceiptItem) => {
+    setReceiptData((prev) => ({
+      ...prev,
+      items: [...prev.items, item],
     }))
   }
 
@@ -355,6 +363,12 @@ export default function ReceiptCreator({ onEditTemplate }: ReceiptCreatorProps) 
                 ))}
               </CardContent>
             </Card>
+
+            {/* Menu Selector */}
+            <MenuSelector
+              selectedTemplate={selectedTemplate}
+              onAddItem={addMenuItemToReceipt}
+            />
 
             {/* Charges & Totals */}
             <Card>

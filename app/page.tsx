@@ -3,15 +3,19 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Receipt, Palette, Download, Smartphone, Database } from "lucide-react"
+import { Plus, Receipt, Palette, Download, Smartphone, Database, MenuIcon } from "lucide-react"
 import ReceiptCreator from "@/components/receipt-creator"
 import TemplateDesigner from "@/components/template-designer"
 import ReceiptGallery from "@/components/receipt-gallery"
+import MenuManager from "@/components/menu-manager"
+import TemplateSelector from "@/components/template-selector"
 import { Toaster } from "@/components/ui/toaster"
+import { type Template } from "@/lib/supabase"
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("create")
   const [editingTemplate, setEditingTemplate] = useState<any>(null)
+  const [selectedMenuTemplate, setSelectedMenuTemplate] = useState<Template | null>(null)
 
   const handleEditTemplate = (template: any) => {
     setEditingTemplate(template)
@@ -31,7 +35,7 @@ export default function HomePage() {
         </header>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="create" className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Create Receipt
@@ -39,6 +43,10 @@ export default function HomePage() {
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
               Design Templates
+            </TabsTrigger>
+            <TabsTrigger value="menu" className="flex items-center gap-2">
+              <MenuIcon className="w-4 h-4" />
+              Menu Manager
             </TabsTrigger>
             <TabsTrigger value="gallery" className="flex items-center gap-2">
               <Receipt className="w-4 h-4" />
@@ -72,6 +80,40 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <TemplateDesigner editingTemplate={editingTemplate} onTemplateUpdated={handleTemplateUpdated} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="menu">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MenuIcon className="w-5 h-5" />
+                  Menu Manager
+                </CardTitle>
+                <CardDescription>Create and manage menu items for your receipt templates</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Select Template</h3>
+                  <TemplateSelector 
+                    selectedTemplate={selectedMenuTemplate}
+                    onSelectTemplate={setSelectedMenuTemplate}
+                    showEditButton={false}
+                  />
+                </div>
+                {selectedMenuTemplate && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Manage Menu Items</h3>
+                    <MenuManager selectedTemplate={selectedMenuTemplate} />
+                  </div>
+                )}
+                {!selectedMenuTemplate && (
+                  <div className="text-center py-8 text-gray-500">
+                    <MenuIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Select a template above to start managing menu items</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

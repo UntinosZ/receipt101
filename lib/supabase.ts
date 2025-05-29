@@ -133,3 +133,16 @@ export type ReceiptItem = {
   quantity: number
   price: number
 }
+
+export type MenuItem = {
+  id: string
+  template_id: string
+  name: string
+  description?: string
+  price: number
+  category?: string
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}

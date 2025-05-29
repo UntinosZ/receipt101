@@ -14,12 +14,13 @@ interface TemplateSelectorProps {
   onSelectTemplate: (template: Template) => void
   onEditTemplate?: (template: Template) => void
   selectedTemplate?: Template | null
+  showEditButton?: boolean
 }
-
 export default function TemplateSelector({
   onSelectTemplate,
   onEditTemplate,
   selectedTemplate,
+  showEditButton = true,
 }: TemplateSelectorProps) {
   const [myTemplates, setMyTemplates] = useState<Template[]>([])
   const [publicTemplates, setPublicTemplates] = useState<Template[]>([])
@@ -101,18 +102,20 @@ export default function TemplateSelector({
                 Public
               </Badge>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation()
-                onEditTemplate?.(template)
-              }}
-              className="text-xs h-6"
-            >
-              <Edit className="w-3 h-3 mr-1" />
-              Edit
-            </Button>
+            {showEditButton && onEditTemplate && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEditTemplate(template)
+                }}
+                className="text-xs h-6"
+              >
+                <Edit className="w-3 h-3 mr-1" />
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
