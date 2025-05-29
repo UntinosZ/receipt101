@@ -82,6 +82,21 @@ export type Template = {
   summary_values_alignment: string // 'left', 'center', 'right'
   summary_labels_position: string // 'column1', 'column2', 'column3'
   summary_values_position: string // 'column1', 'column2', 'column3'
+  // Items count section configuration (separate from summary)
+  show_items_count: boolean // whether to show "Items: X" row
+  items_count_layout_columns: number // 2 or 3 columns
+  items_count_column1_width: number // percentage
+  items_count_column2_width: number // percentage
+  items_count_column3_width: number // percentage
+  items_count_labels_alignment: string // 'left', 'center', 'right'
+  items_count_values_alignment: string // 'left', 'center', 'right'
+  items_count_labels_position: string // 'column1', 'column2', 'column3'
+  items_count_values_position: string // 'column1', 'column2', 'column3'
+  // Default charge settings
+  default_tax_rate: number // default tax rate percentage (e.g., 8.5)
+  default_service_charge_rate: number // default service charge percentage (e.g., 5.0)
+  enable_tax_by_default: boolean // whether tax is enabled by default
+  enable_service_charge_by_default: boolean // whether service charge is enabled by default
   created_by?: string
   is_public: boolean
   created_at: string

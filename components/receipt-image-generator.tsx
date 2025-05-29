@@ -14,6 +14,74 @@ interface ReceiptImageGeneratorProps {
 export default function ReceiptImageGenerator({ receiptData, subtotal, total }: ReceiptImageGeneratorProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
 
+  const renderItemsCountRow = () => {
+    const template = receiptData.customTemplate
+    if (!template?.show_items_count) return null
+
+    const itemsCount = receiptData.items.length
+    const layout = template.items_count_layout_columns || 2
+    
+    // Get column widths
+    const col1Width = template.items_count_column1_width || 50
+    const col2Width = template.items_count_column2_width || 50
+    const col3Width = template.items_count_column3_width || 0
+    
+    // Get positions
+    const labelsPos = template.items_count_labels_position || 'column1'
+    const valuesPos = template.items_count_values_position || 'column2'
+    
+    // Get alignments
+    const labelsAlign = template.items_count_labels_alignment || 'left'
+    const valuesAlign = template.items_count_values_alignment || 'right'
+    
+    if (layout === 2) {
+      return (
+        <div className="flex justify-between text-sm">
+          <div 
+            className={`text-${labelsAlign}`}
+            style={{ width: `${col1Width}%` }}
+          >
+            {labelsPos === 'column1' ? 'Items:' : ''}
+            {valuesPos === 'column1' ? itemsCount : ''}
+          </div>
+          <div 
+            className={`text-${valuesAlign}`}
+            style={{ width: `${col2Width}%` }}
+          >
+            {labelsPos === 'column2' ? 'Items:' : ''}
+            {valuesPos === 'column2' ? itemsCount : ''}
+          </div>
+        </div>
+      )
+    } else {
+      return (
+        <div className="grid grid-cols-3 gap-2 text-sm">
+          <div 
+            className={`text-${labelsAlign}`}
+            style={{ width: `${col1Width}%` }}
+          >
+            {labelsPos === 'column1' ? 'Items:' : ''}
+            {valuesPos === 'column1' ? itemsCount : ''}
+          </div>
+          <div 
+            className={`text-${labelsAlign}`}
+            style={{ width: `${col2Width}%` }}
+          >
+            {labelsPos === 'column2' ? 'Items:' : ''}
+            {valuesPos === 'column2' ? itemsCount : ''}
+          </div>
+          <div 
+            className={`text-${valuesAlign}`}
+            style={{ width: `${col3Width}%` }}
+          >
+            {labelsPos === 'column3' ? 'Items:' : ''}
+            {valuesPos === 'column3' ? itemsCount : ''}
+          </div>
+        </div>
+      )
+    }
+  }
+
   const downloadAsImage = async (format: "png" | "jpg" = "png") => {
     if (!receiptRef.current) return
 
@@ -160,6 +228,14 @@ export default function ReceiptImageGenerator({ receiptData, subtotal, total }: 
           </div>
 
           <hr className="my-4" style={{ borderColor: receiptData.customTemplate?.borderColor || "#e5e7eb" }} />
+
+          {/* Items Count (if enabled and configured separately) */}
+          {renderItemsCountRow() && (
+            <>
+              {renderItemsCountRow()}
+              <hr className="my-4" style={{ borderColor: receiptData.customTemplate?.borderColor || "#e5e7eb" }} />
+            </>
+          )}
 
           {/* Totals */}
           <div className="space-y-1 text-sm">

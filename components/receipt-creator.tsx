@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -46,6 +46,19 @@ export default function ReceiptCreator({ onEditTemplate }: ReceiptCreatorProps) 
   const [saving, setSaving] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [savedReceipt, setSavedReceipt] = useState<Receipt | null>(null)
+
+  // Apply template's default charge settings when template is selected
+  useEffect(() => {
+    if (selectedTemplate) {
+      setCharges(prev => ({
+        ...prev,
+        enableTax: selectedTemplate.enable_tax_by_default || false,
+        taxRate: selectedTemplate.default_tax_rate || 8.5,
+        enableServiceCharge: selectedTemplate.enable_service_charge_by_default || false,
+        serviceChargeRate: selectedTemplate.default_service_charge_rate || 5.0,
+      }))
+    }
+  }, [selectedTemplate])
 
   const addItem = () => {
     const newItem: ReceiptItem = {

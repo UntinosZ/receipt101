@@ -19,6 +19,61 @@ export default function ReceiptGallery() {
   const [showQR, setShowQR] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  const generateItemsCountHTML = (receipt: Receipt) => {
+    const template = receipt.template
+    if (!template?.show_items_count) return ""
+
+    const itemsCount = receipt.items?.length || 0
+    const layout = template.items_count_layout_columns || 2
+    
+    // Get column widths
+    const col1Width = template.items_count_column1_width || 50
+    const col2Width = template.items_count_column2_width || 50
+    const col3Width = template.items_count_column3_width || 0
+    
+    // Get positions
+    const labelsPos = template.items_count_labels_position || 'column1'
+    const valuesPos = template.items_count_values_position || 'column2'
+    
+    // Get alignments
+    const labelsAlign = template.items_count_labels_alignment || 'left'
+    const valuesAlign = template.items_count_values_alignment || 'right'
+    
+    if (layout === 2) {
+      return `
+        <div style="display: flex; font-size: 14px; margin-bottom: 16px;">
+          <div style="width: ${col1Width}%; text-align: ${labelsAlign};">
+            ${labelsPos === 'column1' ? 'Items:' : ''}
+            ${valuesPos === 'column1' ? itemsCount : ''}
+          </div>
+          <div style="width: ${col2Width}%; text-align: ${valuesAlign};">
+            ${labelsPos === 'column2' ? 'Items:' : ''}
+            ${valuesPos === 'column2' ? itemsCount : ''}
+          </div>
+        </div>
+        <hr style="margin: 16px 0; border-color: ${template.border_color || "#e5e7eb"};" />
+      `
+    } else {
+      return `
+        <div style="display: grid; grid-template-columns: ${col1Width}% ${col2Width}% ${col3Width}%; gap: 8px; font-size: 14px; margin-bottom: 16px;">
+          <div style="text-align: ${labelsAlign};">
+            ${labelsPos === 'column1' ? 'Items:' : ''}
+            ${valuesPos === 'column1' ? itemsCount : ''}
+          </div>
+          <div style="text-align: ${labelsAlign};">
+            ${labelsPos === 'column2' ? 'Items:' : ''}
+            ${valuesPos === 'column2' ? itemsCount : ''}
+          </div>
+          <div style="text-align: ${valuesAlign};">
+            ${labelsPos === 'column3' ? 'Items:' : ''}
+            ${valuesPos === 'column3' ? itemsCount : ''}
+          </div>
+        </div>
+        <hr style="margin: 16px 0; border-color: ${template.border_color || "#e5e7eb"};" />
+      `
+    }
+  }
+
   useEffect(() => {
     loadReceipts()
   }, [])
@@ -184,6 +239,8 @@ export default function ReceiptGallery() {
     </div>
     
     <hr style="margin: 16px 0; border-color: ${receipt.template?.border_color || "#e5e7eb"};" />
+    
+    ${receipt.template?.show_items_count ? generateItemsCountHTML(receipt) : ""}
     
     <div style="font-size: 14px;">
       <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">

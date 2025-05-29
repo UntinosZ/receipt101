@@ -120,6 +120,64 @@ export default function ReceiptPreview({
     );
   };
 
+  // Helper function to render items count row with separate configurable layout
+  const renderItemsCountRow = (label: string, value: string) => {
+    const layoutColumns = template.items_count_layout_columns || 2;
+    const labelsPosition = template.items_count_labels_position || "column1";
+    const valuesPosition = template.items_count_values_position || "column2";
+    const labelsAlignment = template.items_count_labels_alignment || "left";
+    const valuesAlignment = template.items_count_values_alignment || "right";
+    
+    const columnWidths = {
+      column1: template.items_count_column1_width || 50,
+      column2: template.items_count_column2_width || 50,
+      column3: template.items_count_column3_width || 33.33
+    };
+    
+    const getAlignmentClass = (alignment: string) => {
+      switch (alignment) {
+        case "center": return "text-center";
+        case "right": return "text-right";
+        default: return "text-left";
+      }
+    };
+    
+    const columns = [];
+    
+    // Create columns based on layout
+    for (let i = 1; i <= layoutColumns; i++) {
+      const columnKey = `column${i}` as keyof typeof columnWidths;
+      const width = columnWidths[columnKey];
+      
+      let content = "";
+      let alignment = "text-left";
+      
+      if (columnKey === labelsPosition) {
+        content = label;
+        alignment = getAlignmentClass(labelsAlignment);
+      } else if (columnKey === valuesPosition) {
+        content = value;
+        alignment = getAlignmentClass(valuesAlignment);
+      }
+      
+      columns.push(
+        <div 
+          key={columnKey}
+          style={{ width: `${width}%` }} 
+          className={`${alignment}`}
+        >
+          {content}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex gap-2">
+        {columns}
+      </div>
+    );
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -360,9 +418,9 @@ export default function ReceiptPreview({
 
           {/* Totals - New Configurable Layout */}
           <div className="space-y-1 text-sm">
-            {renderSummaryRow(
-              `Items: ${receiptData.items.length}`,
-              ""
+            {(template.show_items_count ?? true) && renderItemsCountRow(
+              `Items:`,
+              `${receiptData.items.length}`
             )}
             {renderSummaryRow(
               "Subtotal:",

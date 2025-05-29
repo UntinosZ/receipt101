@@ -122,6 +122,21 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
       summary_values_alignment: "right",
       summary_labels_position: "column1",
       summary_values_position: "column2",
+      // Items count section defaults (separate from summary)
+      show_items_count: true,
+      items_count_layout_columns: 2,
+      items_count_column1_width: 50,
+      items_count_column2_width: 50,
+      items_count_column3_width: 0,
+      items_count_labels_alignment: "left",
+      items_count_values_alignment: "right",
+      items_count_labels_position: "column1",
+      items_count_values_position: "column2",
+      // Default charge settings
+      default_tax_rate: 8.5,
+      default_service_charge_rate: 5.0,
+      enable_tax_by_default: false,
+      enable_service_charge_by_default: false,
       is_public: false,
     }
   })
@@ -141,21 +156,8 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
 
     setSaving(true)
     try {
-      // Temporarily exclude new summary layout fields until database is updated
-      const { 
-        summary_layout_columns,
-        summary_column1_width,
-        summary_column2_width,
-        summary_column3_width,
-        summary_labels_alignment,
-        summary_values_alignment,
-        summary_labels_position,
-        summary_values_position,
-        ...templateDataForDB
-      } = template;
-
       const templateData = {
-        ...templateDataForDB,
+        ...template,
         updated_at: new Date().toISOString(),
       }
 
@@ -214,11 +216,14 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
       { id: "2", description: "Service Fee", quantity: 1, price: 15.0 },
     ],
     subtotal: 65.0,
-    taxRate: 8.5,
-    taxAmount: 5.53,
-    serviceChargeRate: 5.0,
-    serviceChargeAmount: 3.25,
-    total: 73.78,
+    taxRate: template.default_tax_rate || 8.5,
+    taxAmount: template.enable_tax_by_default ? (65.0 * (template.default_tax_rate || 8.5)) / 100 : 0,
+    serviceChargeRate: template.default_service_charge_rate || 5.0,
+    serviceChargeAmount: template.enable_service_charge_by_default ? (65.0 * (template.default_service_charge_rate || 5.0)) / 100 : 0,
+    get total() {
+      const afterServiceCharge = this.subtotal + this.serviceChargeAmount;
+      return afterServiceCharge + this.taxAmount;
+    }
   }
 
   // Helper function to render summary row with configurable layout
@@ -275,6 +280,64 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
     return (
       <div className={`flex gap-2 ${isTotal ? "pt-2 border-t-2 border-double" : ""}`} 
            style={isTotal ? { borderColor: template.border_color || "#e5e7eb" } : {}}>
+        {columns}
+      </div>
+    );
+  };
+
+  // Helper function to render items count row with separate configurable layout
+  const renderItemsCountRow = (label: string, value: string) => {
+    const layoutColumns = template.items_count_layout_columns || 2;
+    const labelsPosition = template.items_count_labels_position || "column1";
+    const valuesPosition = template.items_count_values_position || "column2";
+    const labelsAlignment = template.items_count_labels_alignment || "left";
+    const valuesAlignment = template.items_count_values_alignment || "right";
+    
+    const columnWidths = {
+      column1: template.items_count_column1_width || 50,
+      column2: template.items_count_column2_width || 50,
+      column3: template.items_count_column3_width || 33.33
+    };
+    
+    const getAlignmentClass = (alignment: string) => {
+      switch (alignment) {
+        case "center": return "text-center";
+        case "right": return "text-right";
+        default: return "text-left";
+      }
+    };
+    
+    const columns = [];
+    
+    // Create columns based on layout
+    for (let i = 1; i <= layoutColumns; i++) {
+      const columnKey = `column${i}` as keyof typeof columnWidths;
+      const width = columnWidths[columnKey];
+      
+      let content = "";
+      let alignment = "text-left";
+      
+      if (columnKey === labelsPosition) {
+        content = label;
+        alignment = getAlignmentClass(labelsAlignment);
+      } else if (columnKey === valuesPosition) {
+        content = value;
+        alignment = getAlignmentClass(valuesAlignment);
+      }
+      
+      columns.push(
+        <div 
+          key={columnKey}
+          style={{ width: `${width}%` }} 
+          className={`${alignment}`}
+        >
+          {content}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex gap-2">
         {columns}
       </div>
     );
@@ -715,6 +778,254 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
                     <SelectItem value="right">Right</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Items Count Layout Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Items Count Layout Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Show Items Count Toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={template.show_items_count ?? true}
+                onCheckedChange={(checked) => setTemplate((prev) => ({ ...prev, show_items_count: checked }))}
+              />
+              <label className="text-sm font-medium leading-none">Show Items Count Row</label>
+            </div>
+
+            {template.show_items_count && (
+              <>
+                {/* Column Layout */}
+                <div>
+                  <label className="text-sm font-medium leading-none">Layout Columns</label>
+                  <Select
+                    value={template.items_count_layout_columns?.toString() || "2"}
+                    onValueChange={(value) => {
+                      const columns = parseInt(value);
+                      setTemplate((prev) => ({ 
+                        ...prev, 
+                        items_count_layout_columns: columns,
+                        // Reset column widths based on selected layout
+                        items_count_column1_width: columns === 2 ? 50 : 33.33,
+                        items_count_column2_width: columns === 2 ? 50 : 33.33,
+                        items_count_column3_width: columns === 2 ? 0 : 33.33
+                      }))
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 Columns</SelectItem>
+                      <SelectItem value="3">3 Columns</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Column Widths */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium leading-none">Column 1 Width: {template.items_count_column1_width?.toFixed(1) || 50}%</label>
+                    <Slider
+                      min={20}
+                      max={80}
+                      step={2.5}
+                      value={[template.items_count_column1_width || 50]}
+                      onValueChange={(value) => setTemplate((prev) => ({ ...prev, items_count_column1_width: value[0] }))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium leading-none">Column 2 Width: {template.items_count_column2_width?.toFixed(1) || 50}%</label>
+                    <Slider
+                      min={20}
+                      max={80}
+                      step={2.5}
+                      value={[template.items_count_column2_width || 50]}
+                      onValueChange={(value) => setTemplate((prev) => ({ ...prev, items_count_column2_width: value[0] }))}
+                    />
+                  </div>
+                  
+                  {(template.items_count_layout_columns || 2) === 3 && (
+                    <div>
+                      <label className="text-sm font-medium leading-none">Column 3 Width: {template.items_count_column3_width?.toFixed(1) || 33.33}%</label>
+                      <Slider
+                        min={20}
+                        max={80}
+                        step={2.5}
+                        value={[template.items_count_column3_width || 33.33]}
+                        onValueChange={(value) => setTemplate((prev) => ({ ...prev, items_count_column3_width: value[0] }))}
+                      />
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-gray-500">
+                    Total width: {(
+                      (template.items_count_column1_width || 50) +
+                      (template.items_count_column2_width || 50) +
+                      ((template.items_count_layout_columns || 2) === 3 ? (template.items_count_column3_width || 0) : 0)
+                    ).toFixed(1)}%
+                  </p>
+                </div>
+
+                {/* Label Configuration */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium leading-none">Labels Position</label>
+                    <Select
+                      value={template.items_count_labels_position || "column1"}
+                      onValueChange={(value) => setTemplate((prev) => ({ ...prev, items_count_labels_position: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="column1">Column 1</SelectItem>
+                        <SelectItem value="column2">Column 2</SelectItem>
+                        {(template.items_count_layout_columns || 2) === 3 && (
+                          <SelectItem value="column3">Column 3</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium leading-none">Values Position</label>
+                    <Select
+                      value={template.items_count_values_position || "column2"}
+                      onValueChange={(value) => setTemplate((prev) => ({ ...prev, items_count_values_position: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="column1">Column 1</SelectItem>
+                        <SelectItem value="column2">Column 2</SelectItem>
+                        {(template.items_count_layout_columns || 2) === 3 && (
+                          <SelectItem value="column3">Column 3</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Alignment Settings */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium leading-none">Labels Alignment</label>
+                    <Select
+                      value={template.items_count_labels_alignment || "left"}
+                      onValueChange={(value) => setTemplate((prev) => ({ ...prev, items_count_labels_alignment: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium leading-none">Values Alignment</label>
+                    <Select
+                      value={template.items_count_values_alignment || "right"}
+                      onValueChange={(value) => setTemplate((prev) => ({ ...prev, items_count_values_alignment: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Default Charges Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Default Charges
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Tax Settings */}
+            <div className="space-y-4 p-4 border rounded-lg">
+              <h4 className="font-medium">Tax Settings</h4>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={template.enable_tax_by_default || false}
+                  onCheckedChange={(checked) => setTemplate((prev) => ({ ...prev, enable_tax_by_default: checked }))}
+                />
+                <label className="text-sm font-medium leading-none">Enable tax by default</label>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium leading-none">Default Tax Rate (%)</label>
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    value={template.default_tax_rate || 8.5}
+                    onChange={(e) => setTemplate((prev) => ({ ...prev, default_tax_rate: parseFloat(e.target.value) || 0 }))}
+                    placeholder="8.5"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This tax rate will be automatically applied when creating receipts with this template
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Service Charge Settings */}
+            <div className="space-y-4 p-4 border rounded-lg">
+              <h4 className="font-medium">Service Charge Settings</h4>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={template.enable_service_charge_by_default || false}
+                  onCheckedChange={(checked) => setTemplate((prev) => ({ ...prev, enable_service_charge_by_default: checked }))}
+                />
+                <label className="text-sm font-medium leading-none">Enable service charge by default</label>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium leading-none">Default Service Charge Rate (%)</label>
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    value={template.default_service_charge_rate || 5.0}
+                    onChange={(e) => setTemplate((prev) => ({ ...prev, default_service_charge_rate: parseFloat(e.target.value) || 0 }))}
+                    placeholder="5.0"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This service charge rate will be automatically applied when creating receipts with this template
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -1496,11 +1807,10 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
 
               <hr className="my-4" style={{ borderColor: template.border_color }} />
 
-              {/* Totals - New Configurable Layout */}
-              <div className="space-y-1 text-sm">
-                {renderSummaryRow(
-                  `Items: ${sampleReceipt.items.length}`,
-                  ""
+              {/* Totals - New Configurable Layout */}                <div className="space-y-1 text-sm">
+                {(template.show_items_count ?? true) && renderItemsCountRow(
+                  "Items:",
+                  `${sampleReceipt.items.length}`
                 )}
                 {renderSummaryRow(
                   "Subtotal:",
@@ -1508,19 +1818,19 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
                     ? `$${sampleReceipt.subtotal.toFixed(2)}`
                     : sampleReceipt.subtotal.toFixed(2)
                 )}
-                {renderSummaryRow(
+                {template.enable_service_charge_by_default && sampleReceipt.serviceChargeAmount > 0 && renderSummaryRow(
                   `Service Charge (${sampleReceipt.serviceChargeRate}%):`,
                   template.show_currency_symbol
                     ? `$${sampleReceipt.serviceChargeAmount.toFixed(2)}`
                     : sampleReceipt.serviceChargeAmount.toFixed(2)
                 )}
-                {renderSummaryRow(
+                {(template.enable_service_charge_by_default || template.enable_tax_by_default) && renderSummaryRow(
                   "Before Tax:",
                   template.show_currency_symbol
                     ? `$${(sampleReceipt.subtotal + sampleReceipt.serviceChargeAmount).toFixed(2)}`
                     : (sampleReceipt.subtotal + sampleReceipt.serviceChargeAmount).toFixed(2)
                 )}
-                {renderSummaryRow(
+                {template.enable_tax_by_default && sampleReceipt.taxAmount > 0 && renderSummaryRow(
                   `Tax (${sampleReceipt.taxRate}%):`,
                   template.show_currency_symbol
                     ? `$${sampleReceipt.taxAmount.toFixed(2)}`
