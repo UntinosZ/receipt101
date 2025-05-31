@@ -6,12 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Trash2, Search, QrCode, Globe, User } from "lucide-react"
+import { Download, Trash2, Search, QrCode, Globe, User, Edit, Calendar, DollarSign } from "lucide-react"
 import { supabase, type Receipt } from "@/lib/supabase"
 import { toast } from "@/hooks/use-toast"
 import QRCodeGenerator from "@/components/qr-code-generator"
 
-export default function ReceiptGallery() {
+interface ReceiptGalleryProps {
+  onEditReceipt?: (receipt: Receipt) => void
+}
+
+export default function ReceiptGallery({ onEditReceipt }: ReceiptGalleryProps) {
   const [myReceipts, setMyReceipts] = useState<Receipt[]>([])
   const [publicReceipts, setPublicReceipts] = useState<Receipt[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -74,6 +78,40 @@ export default function ReceiptGallery() {
     }
   }
 
+  // Helper function to generate right-aligned separator HTML
+  const generateSeparatorHTML = (template: any, isDouble = false) => {
+    if (!template) return `<hr style="margin: 16px 0;" />`;
+    
+    const layoutColumns = template.summary_layout_columns || 2;
+    const columnWidths = {
+      column1: template.summary_column1_width || 50,
+      column2: template.summary_column2_width || 50,
+      column3: template.summary_column3_width || 33.33
+    };
+    
+    // Calculate the width for columns 2+3 or just column 2 if only 2 columns
+    let separatorWidth: number;
+    if (layoutColumns === 2) {
+      separatorWidth = columnWidths.column2;
+    } else {
+      separatorWidth = columnWidths.column2 + columnWidths.column3;
+    }
+    
+    // Calculate the left margin to align to the right
+    const leftMargin = 100 - separatorWidth;
+    
+    return `<hr style="
+      width: ${separatorWidth}%; 
+      margin-left: ${leftMargin}%; 
+      margin-right: 0;
+      margin-top: 16px;
+      margin-bottom: 16px;
+      border-color: ${template.border_color || "#e5e7eb"};
+      border-width: ${isDouble ? '2px' : '1px'};
+      border-style: ${isDouble ? 'double' : 'dashed'};
+    " />`;
+  };
+
   useEffect(() => {
     loadReceipts()
   }, [])
@@ -94,14 +132,14 @@ export default function ReceiptGallery() {
       if (publicError) throw publicError
       setPublicReceipts(publicData || [])
 
-      // Load user's receipts
+      // Load user's receipts (for now, load all non-public receipts since we don't have auth)
       const { data: myData, error: myError } = await supabase
         .from("receipts")
         .select(`
           *,
           template:templates(*)
         `)
-        .eq("created_by", "current_user") // In real app, use actual user ID
+        .eq("is_public", false) // Show non-public receipts as "my receipts"
         .order("created_at", { ascending: false })
 
       if (myError) throw myError
@@ -166,7 +204,7 @@ export default function ReceiptGallery() {
     tempDiv.style.fontSize = `${receipt.template?.font_size || 14}px`
 
     if (receipt.template?.show_border) {
-      tempDiv.style.border = `2px solid ${receipt.template.border_color}`
+      tempDiv.style.border = `2px dashed ${receipt.template.border_color}`
     }
 
     tempDiv.innerHTML = `
@@ -241,12 +279,14 @@ export default function ReceiptGallery() {
     <hr style="margin: 16px 0; border-color: ${receipt.template?.border_color || "#e5e7eb"};" />
     
     ${receipt.template?.show_items_count ? generateItemsCountHTML(receipt) : ""}
+    ${receipt.template?.show_separator_after_items_count ? generateSeparatorHTML(receipt.template) : ""}
     
     <div style="font-size: 14px;">
       <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
         <span>Subtotal:</span>
         <span>$${receipt.subtotal.toFixed(2)}</span>
       </div>
+      ${receipt.template?.show_separator_after_subtotal ? generateSeparatorHTML(receipt.template) : ""}
       ${
         receipt.service_charge_amount > 0
           ? `
@@ -254,9 +294,15 @@ export default function ReceiptGallery() {
           <span>Service Charge (${receipt.service_charge_rate}%):</span>
           <span>$${receipt.service_charge_amount.toFixed(2)}</span>
         </div>
+        ${receipt.template?.show_separator_after_service_charge ? generateSeparatorHTML(receipt.template) : ""}
       `
           : ""
       }
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span>Before Tax:</span>
+        <span>$${(receipt.subtotal + (receipt.service_charge_amount || 0)).toFixed(2)}</span>
+      </div>
+      ${receipt.template?.show_separator_after_before_tax ? generateSeparatorHTML(receipt.template) : ""}
       ${
         receipt.tax_amount > 0
           ? `
@@ -264,13 +310,15 @@ export default function ReceiptGallery() {
           <span>Tax (${receipt.tax_rate}%):</span>
           <span>$${receipt.tax_amount.toFixed(2)}</span>
         </div>
+        ${receipt.template?.show_separator_after_tax ? generateSeparatorHTML(receipt.template) : ""}
       `
           : ""
       }
-      <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; padding-top: 8px; border-top: 1px solid ${receipt.template?.border_color || "#e5e7eb"};">
+      <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; padding-top: 8px;">
         <span>Total:</span>
         <span style="color: ${receipt.template?.accent_color || "#3b82f6"};">$${receipt.total.toFixed(2)}</span>
       </div>
+      ${receipt.template?.show_separator_after_total ? generateSeparatorHTML(receipt.template, true) : ""}
     </div>
     
     ${
@@ -370,6 +418,17 @@ export default function ReceiptGallery() {
         </div>
 
         <div className="flex gap-2">
+          {onEditReceipt && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onEditReceipt(receipt)}
+              className="flex-1"
+            >
+              <Edit className="w-3 h-3 mr-1" />
+              Edit
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => generateQR(receipt)} className="flex-1">
             <QrCode className="w-4 h-4 mr-1" />
             QR

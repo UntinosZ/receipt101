@@ -2,8 +2,15 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Receipt Manager Pro',
+  keywords: ['receipt', 'manager', 'pro', 'create', 'design', 'share', 'cloud storage'],
+  authors: [{ name: 'untinosz', url: 'https://untinosz.com' }],
+  openGraph: {
+    title: 'Receipt Manager Pro',
+    description: 'Create, design, and share professional receipts with cloud storage',
+    url: 'https://receipt-manager-pro.v0.dev',
+  },
+  description: 'Create, design, and share professional receipts with cloud storage',
   generator: 'v0.dev',
 }
 

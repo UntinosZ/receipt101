@@ -137,6 +137,13 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
       default_service_charge_rate: 5.0,
       enable_tax_by_default: false,
       enable_service_charge_by_default: false,
+      // Separator line settings - defaults for easy management
+      show_separator_after_items_count: false,
+      show_separator_after_subtotal: false,
+      show_separator_after_service_charge: false,
+      show_separator_after_before_tax: false,
+      show_separator_after_tax: false,
+      show_separator_after_total: true, // commonly used final separator
       is_public: false,
     }
   })
@@ -779,6 +786,114 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Separator Line Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GripVertical className="w-5 h-5" />
+              Separator Lines in Totals Section
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Control which lines in the totals section have separator lines below them for better organization.
+            </p>
+            
+            <div className="space-y-3">
+              {/* Items Count Separator */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <label className="text-sm font-medium leading-none">After Items Count</label>
+                  <p className="text-xs text-muted-foreground">Line below "Items: X"</p>
+                </div>
+                <Switch
+                  checked={template.show_separator_after_items_count || false}
+                  onCheckedChange={(checked) => 
+                    setTemplate((prev) => ({ ...prev, show_separator_after_items_count: checked }))
+                  }
+                />
+              </div>
+
+              {/* Subtotal Separator */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <label className="text-sm font-medium leading-none">After Subtotal</label>
+                  <p className="text-xs text-muted-foreground">Line below subtotal amount</p>
+                </div>
+                <Switch
+                  checked={template.show_separator_after_subtotal || false}
+                  onCheckedChange={(checked) => 
+                    setTemplate((prev) => ({ ...prev, show_separator_after_subtotal: checked }))
+                  }
+                />
+              </div>
+
+              {/* Service Charge Separator */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <label className="text-sm font-medium leading-none">After Service Charge</label>
+                  <p className="text-xs text-muted-foreground">Line below service charge amount</p>
+                </div>
+                <Switch
+                  checked={template.show_separator_after_service_charge || false}
+                  onCheckedChange={(checked) => 
+                    setTemplate((prev) => ({ ...prev, show_separator_after_service_charge: checked }))
+                  }
+                />
+              </div>
+
+              {/* Before Tax Separator */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <label className="text-sm font-medium leading-none">After Before Tax</label>
+                  <p className="text-xs text-muted-foreground">Line below "before tax" subtotal</p>
+                </div>
+                <Switch
+                  checked={template.show_separator_after_before_tax || false}
+                  onCheckedChange={(checked) => 
+                    setTemplate((prev) => ({ ...prev, show_separator_after_before_tax: checked }))
+                  }
+                />
+              </div>
+
+              {/* Tax Separator */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <label className="text-sm font-medium leading-none">After Tax</label>
+                  <p className="text-xs text-muted-foreground">Line below tax amount</p>
+                </div>
+                <Switch
+                  checked={template.show_separator_after_tax || false}
+                  onCheckedChange={(checked) => 
+                    setTemplate((prev) => ({ ...prev, show_separator_after_tax: checked }))
+                  }
+                />
+              </div>
+
+              {/* Total Separator */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex-1">
+                  <label className="text-sm font-medium leading-none">After Total</label>
+                  <p className="text-xs text-muted-foreground">Final line below total amount</p>
+                </div>
+                <Switch
+                  checked={template.show_separator_after_total ?? true}
+                  onCheckedChange={(checked) => 
+                    setTemplate((prev) => ({ ...prev, show_separator_after_total: checked }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                <strong>💡 Tip:</strong> Separator lines help organize the receipt by creating visual breaks between different sections. 
+                The "After Total" separator is commonly used as a final divider before footer content.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -1597,7 +1712,7 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
                 color: template.text_color,
                 fontFamily: template.font_family,
                 fontSize: `${template.font_size}px`,
-                border: template.show_border ? `2px solid ${template.border_color}` : "none",
+                border: template.show_border ? `2px dashed ${template.border_color}` : "none",
               }}
             >
               {/* Business Header */}
@@ -1616,7 +1731,7 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
                     />
                   </div>
                 )}
-                <h1 className="text-2xl font-bold mb-2" style={{ color: template.accent_color }}>
+                <h1 className="text-xl font-bold mb-2" style={{ color: template.accent_color }}>
                   {template.business_name || "Business Name"}
                 </h1>
                 {template.business_address && (
@@ -1659,7 +1774,7 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
               <hr className="my-4" style={{ borderColor: template.border_color }} />
 
               {template.show_customer_block && template.customer_block_text && (
-                <div className="mb-4">
+                <div className="mb-4 border-t">
                   <div
                     className={`${
                       template.customer_block_alignment === "center"
@@ -1685,7 +1800,7 @@ export default function TemplateDesigner({ editingTemplate, onTemplateUpdated }:
                     </div>
                     {template.show_datetime_in_customer && (
                       <div
-                        className={`mt-2 pt-2 border-t ${template.datetime_style === "bold" ? "font-bold" : ""} ${template.datetime_style === "italic" ? "italic" : ""} ${template.datetime_style === "bold-italic" ? "font-bold italic" : ""}`}
+                        className={`${template.datetime_style === "bold" ? "font-bold" : ""} ${template.datetime_style === "italic" ? "italic" : ""} ${template.datetime_style === "bold-italic" ? "font-bold italic" : ""}`}
                         style={{
                           fontSize: `${template.datetime_size}px`,
                           borderColor: template.border_color || "#e5e7eb",

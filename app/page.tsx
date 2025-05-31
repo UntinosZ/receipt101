@@ -10,12 +10,13 @@ import ReceiptGallery from "@/components/receipt-gallery"
 import MenuManager from "@/components/menu-manager"
 import TemplateSelector from "@/components/template-selector"
 import { Toaster } from "@/components/ui/toaster"
-import { type Template } from "@/lib/supabase"
+import { type Template, type Receipt } from "@/lib/supabase"
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("create")
   const [editingTemplate, setEditingTemplate] = useState<any>(null)
   const [selectedMenuTemplate, setSelectedMenuTemplate] = useState<Template | null>(null)
+  const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null)
 
   const handleEditTemplate = (template: any) => {
     setEditingTemplate(template)
@@ -24,6 +25,16 @@ export default function HomePage() {
 
   const handleTemplateUpdated = () => {
     setEditingTemplate(null)
+  }
+
+  const handleEditReceipt = (receipt: Receipt) => {
+    setEditingReceipt(receipt)
+    setActiveTab("create")
+  }
+
+  const handleReceiptUpdated = () => {
+    setEditingReceipt(null)
+    setActiveTab("gallery")
   }
 
   return (

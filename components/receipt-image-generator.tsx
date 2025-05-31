@@ -82,6 +82,45 @@ export default function ReceiptImageGenerator({ receiptData, subtotal, total }: 
     }
   }
 
+  // Helper function to render separator lines aligned to the right with appropriate width
+  const renderTotalSeparator = (isDouble = false) => {
+    const template = receiptData.customTemplate;
+    if (!template) return <hr className="my-4" />;
+    
+    const layoutColumns = template.summary_layout_columns || 2;
+    const columnWidths = {
+      column1: template.summary_column1_width || 50,
+      column2: template.summary_column2_width || 50,
+      column3: template.summary_column3_width || 33.33
+    };
+    
+    // Calculate the width for columns 2+3 or just column 2 if only 2 columns
+    let separatorWidth: number;
+    if (layoutColumns === 2) {
+      separatorWidth = columnWidths.column2;
+    } else {
+      separatorWidth = columnWidths.column2 + columnWidths.column3;
+    }
+    
+    // Calculate the left margin to align to the right
+    const leftMargin = 100 - separatorWidth;
+    
+    return (
+      <hr 
+        style={{ 
+          width: `${separatorWidth}%`,
+          marginLeft: `${leftMargin}%`,
+          marginRight: 0,
+          marginTop: '16px',
+          marginBottom: '16px',
+          borderColor: template.borderColor || "#e5e7eb",
+          borderWidth: isDouble ? '2px' : '1px',
+          borderStyle: isDouble ? 'double' : 'dashed'
+        }}
+      />
+    );
+  };
+
   const downloadAsImage = async (format: "png" | "jpg" = "png") => {
     if (!receiptRef.current) return
 
@@ -125,7 +164,7 @@ export default function ReceiptImageGenerator({ receiptData, subtotal, total }: 
         color: receiptData.customTemplate.textColor,
         fontFamily: receiptData.customTemplate.fontFamily,
         fontSize: `${receiptData.customTemplate.fontSize}px`,
-        border: receiptData.customTemplate.showBorder ? `2px solid ${receiptData.customTemplate.borderColor}` : "none",
+        border: receiptData.customTemplate.showBorder ? `2px dashed ${receiptData.customTemplate.borderColor}` : "none",
       }
     : {}
 
@@ -173,7 +212,7 @@ export default function ReceiptImageGenerator({ receiptData, subtotal, total }: 
               </div>
             )}
             <h1
-              className="text-2xl font-bold mb-2"
+              className="text-xl font-bold mb-2"
               style={{ color: receiptData.customTemplate?.accentColor || "#3b82f6" }}
             >
               {receiptData.businessName || "Your Business Name"}
@@ -227,13 +266,17 @@ export default function ReceiptImageGenerator({ receiptData, subtotal, total }: 
             ))}
           </div>
 
-          <hr className="my-4" style={{ borderColor: receiptData.customTemplate?.borderColor || "#e5e7eb" }} />
+          <hr className="my-4" />
 
           {/* Items Count (if enabled and configured separately) */}
           {renderItemsCountRow() && (
             <>
               {renderItemsCountRow()}
-              <hr className="my-4" style={{ borderColor: receiptData.customTemplate?.borderColor || "#e5e7eb" }} />
+              {receiptData.customTemplate?.show_separator_after_items_count && (
+                <div className="my-2">
+                  {renderTotalSeparator()}
+                </div>
+              )}
             </>
           )}
 
@@ -243,19 +286,59 @@ export default function ReceiptImageGenerator({ receiptData, subtotal, total }: 
               <span>Subtotal:</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
-            {receiptData.tax > 0 && (
-              <div className="flex justify-between">
-                <span>Tax:</span>
-                <span>${receiptData.tax.toFixed(2)}</span>
+            {receiptData.customTemplate?.show_separator_after_subtotal && (
+              <div className="my-2">
+                {renderTotalSeparator()}
               </div>
             )}
-            <div
-              className="flex justify-between font-bold text-lg pt-2"
-              style={{ borderTop: `1px solid ${receiptData.customTemplate?.borderColor || "#e5e7eb"}` }}
-            >
+            
+            {receiptData.serviceChargeAmount > 0 && (
+              <>
+                <div className="flex justify-between">
+                  <span>Service Charge:</span>
+                  <span>${receiptData.serviceChargeAmount.toFixed(2)}</span>
+                </div>
+                {receiptData.customTemplate?.show_separator_after_service_charge && (
+                  <div className="my-2">
+                    {renderTotalSeparator()}
+                  </div>
+                )}
+              </>
+            )}
+            
+            <div className="flex justify-between">
+              <span>Before Tax:</span>
+              <span>${(subtotal + (receiptData.serviceChargeAmount || 0)).toFixed(2)}</span>
+            </div>
+            {receiptData.customTemplate?.show_separator_after_before_tax && (
+              <div className="my-2">
+                {renderTotalSeparator()}
+              </div>
+            )}
+            
+            {receiptData.tax > 0 && (
+              <>
+                <div className="flex justify-between">
+                  <span>Tax:</span>
+                  <span>${receiptData.tax.toFixed(2)}</span>
+                </div>
+                {receiptData.customTemplate?.show_separator_after_tax && (
+                  <div className="my-2">
+                    {renderTotalSeparator()}
+                  </div>
+                )}
+              </>
+            )}
+            
+            <div className="flex justify-between font-bold text-lg pt-2">
               <span>Total:</span>
               <span style={{ color: receiptData.customTemplate?.accentColor || "#3b82f6" }}>${total.toFixed(2)}</span>
             </div>
+            {receiptData.customTemplate?.show_separator_after_total && (
+              <div className="my-2">
+                {renderTotalSeparator(true)}
+              </div>
+            )}
           </div>
 
           {/* Footer */}

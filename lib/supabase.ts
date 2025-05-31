@@ -97,6 +97,13 @@ export type Template = {
   default_service_charge_rate: number // default service charge percentage (e.g., 5.0)
   enable_tax_by_default: boolean // whether tax is enabled by default
   enable_service_charge_by_default: boolean // whether service charge is enabled by default
+  // Separator line settings for totals section
+  show_separator_after_items_count?: boolean // separator after items count line
+  show_separator_after_subtotal?: boolean // separator after subtotal line
+  show_separator_after_service_charge?: boolean // separator after service charge line
+  show_separator_after_before_tax?: boolean // separator after "before tax" line
+  show_separator_after_tax?: boolean // separator after tax line
+  show_separator_after_total?: boolean // separator after total line (final separator)
   created_by?: string
   is_public: boolean
   created_at: string
@@ -116,6 +123,8 @@ export type Receipt = {
   tax_amount: number
   service_charge_rate: number
   service_charge_amount: number
+  discount_amount?: number
+  rounding_amount?: number
   total: number
   receipt_date: string
   receipt_time?: string

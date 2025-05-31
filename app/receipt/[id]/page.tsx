@@ -99,7 +99,7 @@ export default function ReceiptViewPage() {
           <CardContent className="p-6">
             {/* Business Header */}
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2">{receiptData.businessName}</h1>
+              <h1 className="text-xl font-bold mb-2">{receiptData.businessName}</h1>
               {receiptData.businessAddress && (
                 <p className="text-sm text-gray-600 whitespace-pre-line">{receiptData.businessAddress}</p>
               )}

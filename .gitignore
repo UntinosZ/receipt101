@@ -39,3 +39,29 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Test files and temporary scripts
+test_*.js
+test_*.mjs
+debug_*.mjs
+diagnose_*.js
+check_*.mjs
+run_*.mjs
+verify_*.mjs
+quick_diagnostic.js
+create_sample_data.js
+
+# Migration files (keep only the main ones needed)
+add_*.sql
+migration_*.sql
+migration_*.sh
+schema_fix_*.sql
+separator_migration_*.sql
+
+# Documentation files (temporary/diagnostic)
+*_FIXES.md
+*_DIAGNOSIS.md
+*_IMPLEMENTATION.md
+*_TEST.md
+EMPTY_ERROR_FIX.md
+SAVE_ERROR_DIAGNOSIS.md

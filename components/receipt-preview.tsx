@@ -37,18 +37,10 @@ interface ReceiptPreviewProps {
   }
   subtotal: number
   serviceChargeAmount: number
+  discountAmount: number
   taxAmount: number
-  total: number
-  charges: {
-    enableTax: boolean
-    taxRate: number
-    enableServiceCharge: boolean
-    serviceChargeRate: number
-    enableDiscount: boolean
-    discountAmount: number
-    enableRounding: boolean
-    roundingAmount: number
-  }
+  roundingAmount: number
+  finalTotal: number
 }
 
 export default function ReceiptPreview({
@@ -56,9 +48,10 @@ export default function ReceiptPreview({
   receiptData,
   subtotal,
   serviceChargeAmount,
+  discountAmount,
   taxAmount,
-  total,
-  charges,
+  roundingAmount,
+  finalTotal,
 }: ReceiptPreviewProps) {
   
   // Helper function to render summary row with configurable layout
@@ -113,8 +106,7 @@ export default function ReceiptPreview({
     }
     
     return (
-      <div className={`flex gap-2 ${isTotal ? "pt-2 border-t-2 border-double" : ""}`} 
-           style={isTotal ? { borderColor: template.border_color || "#e5e7eb" } : {}}>
+      <div className="flex gap-2">
         {columns}
       </div>
     );
@@ -178,6 +170,43 @@ export default function ReceiptPreview({
     );
   };
 
+  // Helper function to render separator lines aligned to the right with appropriate width
+  const renderTotalSeparator = (isDouble = false) => {
+    const layoutColumns = template.summary_layout_columns || 2;
+    const columnWidths = {
+      column1: template.summary_column1_width || 50,
+      column2: template.summary_column2_width || 50,
+      column3: template.summary_column3_width || 33.33
+    };
+    
+    // Calculate the width for columns 2+3 or just column 2 if only 2 columns
+    let separatorWidth: number;
+    if (layoutColumns === 2) {
+      separatorWidth = columnWidths.column2;
+    } else {
+      separatorWidth = columnWidths.column2 + columnWidths.column3;
+    }
+    
+    // Calculate the left margin to align to the right
+    const leftMargin = 100 - separatorWidth;
+    
+    return (
+      <hr 
+        className={isDouble ? 'border-t-2 border-dashed' : 'border-t'}
+        style={{ 
+          width: `${separatorWidth}%`,
+          marginLeft: `${leftMargin}%`,
+          marginRight: 0,
+          marginTop: '8px',
+          marginBottom: '8px',
+          borderColor: template.border_color || "#e5e7eb",
+          borderWidth: isDouble ? '2px' : '1px',
+          borderStyle: isDouble ? 'double' : 'dashed'
+        }}
+      />
+    );
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -192,7 +221,7 @@ export default function ReceiptPreview({
             color: template.text_color,
             fontSize: `${template.font_size}px`,
             fontFamily: template.font_family,
-            border: template.show_border ? `2px solid ${template.border_color}` : "none",
+            border: template.show_border ? `2px dashed ${template.border_color}` : "none",
           }}
         >
           {/* Business Header */}
@@ -223,7 +252,7 @@ export default function ReceiptPreview({
                 />
               </div>
             )}
-            <h1 className="text-2xl font-bold mb-2" style={{ color: template.accent_color }}>
+            <h1 className="text-xl font-bold mb-2" style={{ color: template.accent_color }}>
               {template.business_name}
             </h1>
             {template.business_address && (
@@ -265,7 +294,7 @@ export default function ReceiptPreview({
 
           {/* Customer Block */}
           {template.show_customer_block && template.customer_block_text && (
-            <div className="mb-4">
+            <div className="mb-4 border-t" style={{ borderStyle: 'dashed' }}>
               <div
                 className={`${
                   template.customer_block_alignment === "center"
@@ -292,7 +321,7 @@ export default function ReceiptPreview({
 
                 {template.show_datetime_in_customer && (
                   <div
-                    className={`mt-2 pt-2 border-t ${template.datetime_style === "bold" ? "font-bold" : ""} ${template.datetime_style === "italic" ? "italic" : ""} ${template.datetime_style === "bold-italic" ? "font-bold italic" : ""}`}
+                    className={`${template.datetime_style === "bold" ? "font-bold" : ""} ${template.datetime_style === "italic" ? "italic" : ""} ${template.datetime_style === "bold-italic" ? "font-bold italic" : ""}`}
                     style={{
                       fontSize: `${template.datetime_size}px`,
                       borderColor: template.border_color || "#e5e7eb",
@@ -314,7 +343,7 @@ export default function ReceiptPreview({
             </div>
           )}
 
-          <div className="my-4 border-t border-gray-300"></div>
+          <div className="my-4 border-t border-gray-300" style={{ borderStyle: 'dashed' }}></div>
 
           {/* Items */}
           <div className="space-y-2 mb-4">
@@ -372,7 +401,7 @@ export default function ReceiptPreview({
                       visible: template.show_description_column ?? true,
                       width: template.item_description_width || 50,
                       align: "",
-                      content: item.description || "Item"
+                      content: item.description || ""
                     },
                     quantity: {
                       visible: template.show_quantity_column ?? true,
@@ -406,7 +435,7 @@ export default function ReceiptPreview({
                       style={{ width: `${config.width}%` }} 
                       className={config.align}
                     >
-                      {config.content}
+                      {config.content || (column === 'description' ? '' : config.content)}
                     </div>
                   )
                 })}
@@ -414,69 +443,114 @@ export default function ReceiptPreview({
             ))}
           </div>
 
-          <div className="my-4 border-t border-gray-300"></div>
+          <div className="my-4 border-t border-gray-300" style={{ borderStyle: 'dashed' }}></div>
 
           {/* Totals - New Configurable Layout */}
           <div className="space-y-1 text-sm">
-            {(template.show_items_count ?? true) && renderItemsCountRow(
-              `Items:`,
-              `${receiptData.items.length}`
+            {(template.show_items_count ?? true) && (
+              <>
+                {renderItemsCountRow(
+                  `Items:`,
+                  `${receiptData.items.length}`
+                )}
+                {template.show_separator_after_items_count && (
+                  <div className="my-2">
+                    {renderTotalSeparator()}
+                  </div>
+                )}
+              </>
             )}
+            
             {renderSummaryRow(
               "Subtotal:",
               template.show_currency_symbol ? `$${subtotal.toFixed(2)}` : subtotal.toFixed(2)
             )}
-            {charges.enableDiscount && charges.discountAmount > 0 && 
+            {template.show_separator_after_subtotal && (
+              <div className="my-2">
+                {renderTotalSeparator()}
+              </div>
+            )}
+            
+            {discountAmount > 0 && 
               renderSummaryRow(
                 "Discount:",
                 "-" + (template.show_currency_symbol
-                  ? `$${charges.discountAmount.toFixed(2)}`
-                  : charges.discountAmount.toFixed(2))
+                  ? `$${discountAmount.toFixed(2)}`
+                  : discountAmount.toFixed(2))
               )
             }
-            {charges.enableServiceCharge && serviceChargeAmount > 0 && 
-              renderSummaryRow(
-                `Service Charge (${charges.serviceChargeRate}%):`,
-                template.show_currency_symbol
-                  ? `$${serviceChargeAmount.toFixed(2)}`
-                  : serviceChargeAmount.toFixed(2)
-              )
-            }
+            
+            {serviceChargeAmount > 0 && (
+              <>
+                {renderSummaryRow(
+                  "Service Charge:",
+                  template.show_currency_symbol
+                    ? `$${serviceChargeAmount.toFixed(2)}`
+                    : serviceChargeAmount.toFixed(2)
+                )}
+                {template.show_separator_after_service_charge && (
+                  <div className="my-2">
+                    {renderTotalSeparator()}
+                  </div>
+                )}
+              </>
+            )}
+            
             {renderSummaryRow(
               "Before Tax:",
               template.show_currency_symbol
-                ? `$${(subtotal - (charges.discountAmount || 0) + serviceChargeAmount).toFixed(2)}`
-                : (subtotal - (charges.discountAmount || 0) + serviceChargeAmount).toFixed(2)
+                ? `$${(subtotal - discountAmount + serviceChargeAmount).toFixed(2)}`
+                : (subtotal - discountAmount + serviceChargeAmount).toFixed(2)
             )}
-            {charges.enableTax && taxAmount > 0 && 
-              renderSummaryRow(
-                `Tax (${charges.taxRate}%):`,
-                template.show_currency_symbol ? `$${taxAmount.toFixed(2)}` : taxAmount.toFixed(2)
-              )
-            }
-            {charges.enableRounding && charges.roundingAmount !== 0 && 
+            {template.show_separator_after_before_tax && (
+              <div className="my-2">
+                {renderTotalSeparator()}
+              </div>
+            )}
+            
+            {taxAmount > 0 && (
+              <>
+                {renderSummaryRow(
+                  "Tax:",
+                  template.show_currency_symbol ? `$${taxAmount.toFixed(2)}` : taxAmount.toFixed(2)
+                )}
+                {template.show_separator_after_tax && (
+                  <div className="my-2">
+                    {renderTotalSeparator()}
+                  </div>
+                )}
+              </>
+            )}
+            
+            {roundingAmount !== 0 && 
               renderSummaryRow(
                 "Rounding:",
-                (charges.roundingAmount >= 0 ? "+" : "") +
+                (roundingAmount >= 0 ? "+" : "") +
                 (template.show_currency_symbol
-                  ? `$${charges.roundingAmount.toFixed(2)}`
-                  : charges.roundingAmount.toFixed(2))
+                  ? `$${roundingAmount.toFixed(2)}`
+                  : roundingAmount.toFixed(2))
               )
             }
+            
             <div style={{ color: template.accent_color }}>
               {renderSummaryRow(
                 "Total:",
-                template.show_currency_symbol ? `$${total.toFixed(2)}` : total.toFixed(2),
+                template.show_currency_symbol ? `$${finalTotal.toFixed(2)}` : finalTotal.toFixed(2),
                 true
               )}
             </div>
-            <div className="border-t-2 border-double" style={{ borderColor: template.border_color || "#e5e7eb" }}></div>
+            
+            {template.show_separator_after_total && (
+              <div className="my-2">
+                {renderTotalSeparator(true)}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
           {receiptData.notes && (
             <>
-              <div className="my-4 border-t border-gray-300"></div>
+              <div className="my-4 border-t border-gray-300" style={{ borderStyle: 'dashed' }}></div>
               <div className="text-sm">
                 <p className="font-medium mb-1">Notes:</p>
                 <p className="opacity-80 whitespace-pre-line">{receiptData.notes}</p>
